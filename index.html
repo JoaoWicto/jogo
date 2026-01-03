@@ -10,83 +10,81 @@ html,body{
     padding:0;
     background:#111;
     overflow:hidden;
-    font-family:'Courier New', monospace;
-    color:#fff;
+    font-family:monospace;
 }
-
 canvas{display:block}
 
-/* BOTÕES */
 button{
-    background:#222;
-    border:2px solid #ff4444;
+    background:#111;
+    border:1px solid red;
     color:#fff;
-    padding:10px 20px;
+    padding:8px 16px;
     cursor:pointer;
-    font-size:16px;
-    transition:0.2s;
-    border-radius:6px;
 }
-button:hover{
-    background:#ff4444;
-    color:#000;
-}
+button:hover{background:red}
 
-/* HUD */
 #hud{
     position:fixed;
     top:10px;
     left:10px;
-    background:rgba(20,20,20,0.8);
-    border:2px solid #ff4444;
-    padding:15px;
-    font-size:16px;
-    line-height:1.5;
+    background:rgba(0,0,0,.7);
+    border:1px solid red;
+    padding:10px;
     color:#fff;
     z-index:5;
-    border-radius:8px;
-    box-shadow:0 0 10px red;
+    font-size:14px;
 }
 
-/* OVERLAY */
 .overlay{
     position:fixed;
     inset:0;
-    background:rgba(0,0,0,0.95);
+    background:rgba(0,0,0,.9);
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     gap:15px;
-    color:#ff4444;
+    color:red;
     z-index:20;
-    font-size:20px;
 }
 .hidden{display:none}
 
-/* BOTÕES MOBILE */
-#mobile{
+#mobileControls{
     position:fixed;
-    bottom:15px;
+    bottom:10px;
     left:50%;
     transform:translateX(-50%);
     display:flex;
-    gap:10px;
-    z-index:10;
+    flex-wrap:wrap;
+    gap:8px;
+    z-index:15;
 }
-@media(min-width:800px){#mobile{display:none}}
-button.mobile-btn{
-    width:60px;
-    height:60px;
-    font-size:20px;
-    border-radius:50%;
-    background:#222;
-    border:2px solid #ff4444;
+.mobile-btn{
+    width:50px;
+    height:50px;
+    font-size:18px;
+    border:1px solid red;
+    background:#111;
     color:#fff;
+    border-radius:8px;
 }
-button.mobile-btn:hover{background:#ff4444;color:#000;}
+.mobile-btn:hover{background:red}
+
+#powerBar{
+    width:150px;
+    height:10px;
+    background:#222;
+    border:1px solid red;
+    margin-top:5px;
+}
+#powerFill{
+    width:0%;
+    height:100%;
+    background:orange;
+}
 </style>
 </head>
+
 <body>
 
 <canvas id="game"></canvas>
@@ -107,7 +105,10 @@ button.mobile-btn:hover{background:#ff4444;color:#000;}
 <!-- SHOP -->
 <div id="shop" class="overlay hidden">
     <h2>🛒 LOJA</h2>
-    <div id="shopItems"></div>
+    <button onclick="buySpeed()">⚡ Velocidade (20s) - 10 moedas</button>
+    <button onclick="freezeEnemies()">❄️ Congelar inimigos (5s) - 15 moedas</button>
+    <button onclick="upgradePowerRegen()">⚡ Recarga Poder</button>
+    <button onclick="changeColor()">🎨 Cor do Player</button>
     <button onclick="toggleShop()">❌ FECHAR</button>
 </div>
 
@@ -125,31 +126,40 @@ PONTOS: <span id="hudScore"></span><br>
 MOEDAS: <span id="hudCoins"></span><br>
 MORTES: <span id="hudKills"></span><br>
 BUFF: <span id="hudBuff">Nenhum</span><br>
-PODER: <span id="hudPower">0</span><br>
-RECARGA: <span id="hudRegen">1.0</span>s<br>
-MULTIPLICADOR MOEDAS: <span id="hudCoinMult">1x</span><br>
-ABILIDADES: <span id="hudSkills">Nenhuma</span>
+HABILIDADE: <span id="hudSkill">Nenhuma</span><br>
+<div id="powerBar"><div id="powerFill"></div></div><br>
+<button onclick="toggleShop()">🛒 LOJA</button>
 </div>
 
-<!-- BOTÕES MOBILE -->
-<div id="mobile">
-    <button class="mobile-btn" onclick="useSkill(1)">1</button>
-    <button class="mobile-btn" onclick="useSkill(2)">2</button>
-    <button class="mobile-btn" onclick="useSkill(3)">3</button>
+<!-- MOBILE CONTROLS -->
+<div id="mobileControls">
+    <button class="mobile-btn" id="btnUp">▲</button>
+    <button class="mobile-btn" id="btnLeft">◀</button>
+    <button class="mobile-btn" id="btnDown">▼</button>
+    <button class="mobile-btn" id="btnRight">▶</button>
+    <button class="mobile-btn" id="skill1">1</button>
+    <button class="mobile-btn" id="skill2">2</button>
+    <button class="mobile-btn" id="skill3">3</button>
+    <button class="mobile-btn" id="skill4">4</button>
+    <button class="mobile-btn" id="skill5">5</button>
+    <button class="mobile-btn" id="skill6">6</button>
+    <button class="mobile-btn" id="skill7">7</button>
+    <button class="mobile-btn" id="skill8">8</button>
+    <button class="mobile-btn" id="skill9">9</button>
+    <button class="mobile-btn" id="skill10">0</button>
 </div>
 
 <script>
 // ================= CANVAS =================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
 addEventListener("resize",resize);resize();
 
 // ================= ELEMENTOS =================
 const menu=document.getElementById("menu");
 const upgrade=document.getElementById("upgrade");
 const shop=document.getElementById("shop");
-const shopItemsDiv=document.getElementById("shopItems");
 const gameoverScreen=document.getElementById("gameover");
 
 const hudLife=document.getElementById("hudLife");
@@ -157,11 +167,9 @@ const hudScore=document.getElementById("hudScore");
 const hudCoins=document.getElementById("hudCoins");
 const hudKills=document.getElementById("hudKills");
 const hudBuff=document.getElementById("hudBuff");
-const hudPower=document.getElementById("hudPower");
-const hudRegen=document.getElementById("hudRegen");
-const hudSkills=document.getElementById("hudSkills");
-const hudCoinMult=document.getElementById("hudCoinMult");
+const hudSkill=document.getElementById("hudSkill");
 const finalScore=document.getElementById("finalScore");
+const powerFill=document.getElementById("powerFill");
 
 // ================= STATE =================
 let state="menu"; // menu | playing | upgrade | gameover
@@ -175,7 +183,6 @@ const player={
     life:100,maxLife:100,
     attackRange:50,
     inv:0,atk:0,cd:0,
-    color:"#fff",
     effect:null,
     effectTimer:0
 };
@@ -184,24 +191,10 @@ const player={
 let score=0, coins=0, kills=0;
 let nextUpgrade=5;
 let enemyCount=1;
-
+let power=0, powerMax=100;
+let powerRegenRate=1000; // 1 por segundo
 let speedTimer=0;
 let freezeTimer=0;
-
-// ================= HABILIDADES =================
-let power=0;
-let powerMax=100;
-let powerRegenRate=60; // frames
-let powerRegenTimer=0;
-let powerSpeedLevel=0;
-let coinMultiplier=1;
-
-// habilidades com efeito visual
-const skills=[
-    {name:"Corte Forte", cost:20, effect:"yellow", func:()=>{enemies.forEach(e=>{if(Math.hypot(player.x-e.x,player.y-e.y)<player.attackRange) e.life-=30;})}},
-    {name:"Congelar", cost:40, effect:"cyan", func:()=>{enemies.forEach(e=>e.freeze=120)}},
-    {name:"Explosão", cost:70, effect:"magenta", func:()=>{enemies.forEach(e=>e.life-=60)}},
-];
 
 // ================= ENEMIES =================
 const enemies=[];
@@ -211,15 +204,65 @@ const LIGHT=180;
 const keys={};
 addEventListener("keydown",e=>{
     keys[e.key.toLowerCase()]=true;
+    if("1234567890".includes(e.key))useLegendarySkill(parseInt(e.key)-1);
     if(e.code==="Space")attack();
     if(e.key==="ç"||e.key==="Ç")toggleShop();
-    if(["1","2","3"].includes(e.key)) useSkill(+e.key);
 });
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
+// ================= MOBILE CONTROLS =================
+const mobileKeys={up:false,down:false,left:false,right:false};
+document.getElementById("btnUp").addEventListener("touchstart",()=>mobileKeys.up=true);
+document.getElementById("btnUp").addEventListener("touchend",()=>mobileKeys.up=false);
+document.getElementById("btnDown").addEventListener("touchstart",()=>mobileKeys.down=true);
+document.getElementById("btnDown").addEventListener("touchend",()=>mobileKeys.down=false);
+document.getElementById("btnLeft").addEventListener("touchstart",()=>mobileKeys.left=true);
+document.getElementById("btnLeft").addEventListener("touchend",()=>mobileKeys.left=false);
+document.getElementById("btnRight").addEventListener("touchstart",()=>mobileKeys.right=true);
+document.getElementById("btnRight").addEventListener("touchend",()=>mobileKeys.right=false);
+for(let i=0;i<10;i++){
+  document.getElementById(`skill${i+1}`).addEventListener("touchstart",()=>useLegendarySkill(i));
+}
+
+// ================= HABILIDADES LENDÁRIAS =================
+const legendarySkills=[
+  {name:"Tempestade de Fogo", cost:50, effect:"orange", func:()=>{enemies.forEach(e=>e.life-=50);player.speed+=0.5;}},
+  {name:"Corte Relâmpago", cost:60, effect:"yellow", func:()=>{enemies.forEach(e=>{if(Math.hypot(player.x-e.x,player.y-e.y)<player.attackRange*2)e.life-=70;});}},
+  {name:"Congelamento Global", cost:70, effect:"cyan", func:()=>{enemies.forEach(e=>e.freeze=180);}},
+  {name:"Explosão de Energia", cost:80, effect:"magenta", func:()=>{enemies.forEach(e=>e.life-=100);player.effectTimer=60;}},
+  {name:"Fúria do Dragão", cost:90, effect:"red", func:()=>{player.attackRange*=1.5;}},
+  {name:"Aura de Cura", cost:60, effect:"green", func:()=>{player.life+=player.maxLife*0.3;if(player.life>player.maxLife)player.life=player.maxLife;}},
+  {name:"Chuva de Flechas", cost:40, effect:"brown", func:()=>{enemies.forEach(e=>{if(Math.random()<0.5)e.life-=30;});}},
+  {name:"Escudo de Luz", cost:50, effect:"white", func:()=>{player.inv=120;}},
+  {name:"Vórtice Negro", cost:70, effect:"black", func:()=>{enemies.forEach(e=>{let dx=player.x-e.x,dy=player.y-e.y,d=Math.hypot(dx,dy);e.x+=dx/d*5;e.y+=dy/d*5;});}},
+  {name:"Domínio Elemental", cost:100, effect:"purple", func:()=>{player.attackRange*=2;powerRegenRate*=0.5;}}
+];
+
+function useLegendarySkill(index){
+  if(state!=="playing")return;
+  const skill=legendarySkills[index];
+  if(power>=skill.cost){
+    power-=skill.cost;
+    player.effect=skill.effect;
+    player.effectTimer=60;
+    skill.func();
+    hudSkill.textContent=skill.name;
+    hudBuff.textContent=skill.name;
+  }
+}
+
 // ================= FLOW =================
-function startGame(){resetGame();menu.classList.add("hidden");state="playing";}
-function restartGame(){gameoverScreen.classList.add("hidden");startGame();}
+function startGame(){
+    resetGame();
+    menu.classList.add("hidden");
+    state="playing";
+}
+
+function restartGame(){
+    gameoverScreen.classList.add("hidden");
+    startGame();
+}
+
 function resetGame(){
     score=coins=kills=0;
     nextUpgrade=5;
@@ -230,78 +273,72 @@ function resetGame(){
     player.life=player.maxLife=100;
     player.attackRange=50;
     player.speed=player.baseSpeed;
-    player.color="#fff";
-    player.effect=null;
-    player.effectTimer=0;
-
-    power=0;
-    powerRegenRate=60;
-    powerSpeedLevel=0;
-    coinMultiplier=1;
 
     spawnEnemies();
 }
 
 // ================= SHOP =================
-const shopItems=[
-    {name:"Velocidade (20s)", price:10, action:()=>{if(coins>=10){coins-=10;speedTimer=1200;player.speed=5;}}},
-    {name:"Congelar inimigos (5s)", price:15, action:()=>{if(coins>=15){coins-=15;freezeTimer=300;}}},
-    {name:"Recarga Poder +5", price:20, action:upgradePowerSpeed},
-    {name:"Multiplicador de moedas", price:30, action:upgradeCoinMult},
-    {name:"Mudar Cor Player", price:10, action:changeColor},
-    {name:"Poção Vida +20", price:15, action:()=>{if(coins>=15){coins-=15;player.life+=20;if(player.life>player.maxLife)player.life=player.maxLife;}}},
-    {name:"Poção Ataque +10%", price:25, action:()=>{if(coins>=25){coins-=25;player.attackRange*=1.1;}}}
-];
-
-function renderShop(){
-    shopItemsDiv.innerHTML="";
-    shopItems.forEach((item,i)=>{
-        const btn=document.createElement("button");
-        btn.textContent=`${item.name} - ${item.price} moedas`;
-        btn.onclick=item.action;
-        shopItemsDiv.appendChild(btn);
-    });
-}
-
 function toggleShop(){
     if(state!=="playing")return;
     shopOpen=!shopOpen;
     shop.classList.toggle("hidden");
-    renderShop();
 }
 
-function upgradePowerSpeed(){
-    const baseCost=20+powerSpeedLevel*10;
-    if(coins>=baseCost && powerRegenRate>12){
-        coins-=baseCost;
-        powerRegenRate-=6;
-        if(powerRegenRate<12) powerRegenRate=12;
-        powerSpeedLevel++;
-        alert(`Recarga de poder melhorada! Novo tempo: ${(powerRegenRate/60).toFixed(2)}s`);
-    } else alert("Não possui moedas ou já está no mínimo!");
+function buySpeed(){
+    if(coins>=10 && speedTimer<=0){
+        coins-=10;
+        speedTimer=1200;
+        player.speed=5;
+    }
 }
 
-function upgradeCoinMult(){
-    const cost=30*Math.ceil(coinMultiplier);
-    if(coins>=cost){
-        coins-=cost;
-        coinMultiplier+=0.5;
-        alert(`Multiplicador de moedas aumentado! Agora: ${coinMultiplier}x`);
-    } else alert("Moedas insuficientes!");
+function freezeEnemies(){
+    if(coins>=15 && freezeTimer<=0){
+        coins-=15;
+        freezeTimer=300;
+    }
+}
+
+let powerRegenCost=20;
+function upgradePowerRegen(){
+    if(coins>=powerRegenCost && powerRegenRate>400){
+        coins-=powerRegenCost;
+        powerRegenRate-=100;
+        powerRegenCost+=5;
+    }
 }
 
 function changeColor(){
     if(coins>=10){
         coins-=10;
         player.color=`hsl(${Math.random()*360},80%,60%)`;
-    } else alert("Moedas insuficientes!");
+    }
 }
 
 // ================= UPGRADES =================
-function checkUpgrade(){if(kills>=nextUpgrade){state="upgrade";upgrade.classList.remove("hidden");}}
-function upgradeLife(){player.maxLife*=1.05;player.life=player.maxLife;closeUpgrade();}
-function upgradeAttack(){player.attackRange*=1.05;closeUpgrade();}
-function closeUpgrade(){upgrade.classList.add("hidden");nextUpgrade*=2;state="playing";}
+function checkUpgrade(){
+    if(kills>=nextUpgrade){
+        state="upgrade";
+        upgrade.classList.remove("hidden");
+    }
+}
+
+function upgradeLife(){
+    player.maxLife*=1.05;
+    player.life=player.maxLife;
+    closeUpgrade();
+}
+
+function upgradeAttack(){
+    player.attackRange*=1.05;
+    closeUpgrade();
+}
+
+function closeUpgrade(){
+    upgrade.classList.add("hidden");
+    nextUpgrade*=2;
+    state="playing";
+}
 
 // ================= ENEMIES =================
 function spawnEnemies(){
@@ -309,27 +346,23 @@ function spawnEnemies(){
     for(let i=0;i<enemyCount;i++){
         const r=Math.random();
         let type="normal";
+
         if(r<0.3) type="runner";
         else if(r<0.5) type="tank";
         else if(r<0.65) type="ghost";
-        let e={type,x:Math.random()*canvas.width,y:Math.random()*canvas.height};
-        if(type==="runner"){Object.assign(e,{size:12,speed:2.4,life:20,reward:2});}
-        else if(type==="tank"){Object.assign(e,{size:24,speed:0.8,life:50,reward:5});}
-        else if(type==="ghost"){Object.assign(e,{size:18,speed:1.5,life:40,reward:3,phase:0});}
-        else{Object.assign(e,{size:16,speed:1.2,life:40,reward:2});}
-        enemies.push(e);
-    }
-}
 
-// ================= HABILIDADES =================
-function useSkill(n){
-    if(state!=="playing") return;
-    const skill=skills[n-1];
-    if(power>=skill.cost){
-        power-=skill.cost;
-        player.effect=skill.effect;
-        player.effectTimer=30;
-        skill.func();
+        let e={type,x:Math.random()*canvas.width,y:Math.random()*canvas.height};
+
+        if(type==="runner"){
+            Object.assign(e,{size:12,speed:2.4,life:20,reward:2});
+        }else if(type==="tank"){
+            Object.assign(e,{size:24,speed:0.8,life:50,reward:5});
+        }else if(type==="ghost"){
+            Object.assign(e,{size:18,speed:1.5,life:40,reward:3,phase:0});
+        }else{
+            Object.assign(e,{size:16,speed:1.2,life:40,reward:2});
+        }
+        enemies.push(e);
     }
 }
 
@@ -344,7 +377,7 @@ function attack(){
             if(e.life<=0){
                 enemies.splice(i,1);
                 kills++;
-                coins+=e.reward*coinMultiplier;
+                coins+=e.reward;
                 score+=e.reward*100;
                 checkUpgrade();
             }
@@ -358,8 +391,9 @@ function attack(){
 function update(){
     if(state!=="playing"||shopOpen)return;
 
-    // movimento
-    if(speedTimer>0) speedTimer--; else player.speed=player.baseSpeed;
+    if(speedTimer>0) speedTimer--;
+    else player.speed=player.baseSpeed;
+
     if(freezeTimer>0) freezeTimer--;
 
     if(keys.w)player.y-=player.speed;
@@ -367,18 +401,41 @@ function update(){
     if(keys.a)player.x-=player.speed;
     if(keys.d)player.x+=player.speed;
 
+    // mobile input
+    if(mobileKeys.up)player.y-=player.speed;
+    if(mobileKeys.down)player.y+=player.speed;
+    if(mobileKeys.left)player.x-=player.speed;
+    if(mobileKeys.right)player.x+=player.speed;
+
     player.x=Math.max(player.size,Math.min(canvas.width-player.size,player.x));
     player.y=Math.max(player.size,Math.min(canvas.height-player.size,player.y));
 
     // inimigos
     enemies.forEach(e=>{
-        if(freezeTimer>0) return;
-        if(e.freeze>0){e.freeze--;return;}
-        let dx=player.x-e.x,dy=player.y-e.y,d=Math.hypot(dx,dy);
-        if(e.type==="ghost"){e.phase+=0.05;e.x+=Math.cos(e.phase)*2;e.y+=Math.sin(e.phase)*2;}
-        if(d>0){e.x+=dx/d*e.speed;e.y+=dy/d*e.speed;}
-        if(d<player.size+e.size && player.inv<=0){player.life-=20;player.inv=60;
-            if(player.life<=0){state="gameover";gameoverScreen.classList.remove("hidden");finalScore.textContent="PONTOS: "+score;}
+        if(freezeTimer>0)return;
+
+        let dx=player.x-e.x,dy=player.y-e.y;
+        let d=Math.hypot(dx,dy);
+
+        if(e.type==="ghost"){
+            e.phase+=0.05;
+            e.x+=Math.cos(e.phase)*2;
+            e.y+=Math.sin(e.phase)*2;
+        }
+
+        if(d>0){
+            e.x+=(dx/d)*e.speed;
+            e.y+=(dy/d)*e.speed;
+        }
+
+        if(d<player.size+e.size && player.inv<=0){
+            player.life-=20;
+            player.inv=60;
+            if(player.life<=0){
+                state="gameover";
+                gameoverScreen.classList.remove("hidden");
+                finalScore.textContent="PONTOS: "+score;
+            }
         }
     });
 
@@ -386,22 +443,27 @@ function update(){
     if(player.atk>0)player.atk--;
     if(player.cd>0)player.cd--;
 
-    // barra de poder
-    powerRegenTimer++;
-    if(powerRegenTimer>=powerRegenRate){power++; if(power>powerMax) power=powerMax; powerRegenTimer=0;}
-    if(player.effectTimer>0){player.effectTimer--; if(player.effectTimer===0) player.effect=null;}
-
     score++;
+
     const extra=Math.floor(score/5000)*2;
-    if(enemyCount!==1+extra){enemyCount=1+extra;spawnEnemies();}
+    if(enemyCount!==1+extra){
+        enemyCount=1+extra;
+        spawnEnemies();
+    }
+
+    // regenerar poder
+    if(power<powerMax && performance.now()%powerRegenRate<16) power++;
+
+    if(player.effectTimer>0) player.effectTimer--;
+    else player.effect=null;
 }
 
 // ================= DRAW =================
 function draw(){
-    ctx.fillStyle="#111";
+    ctx.fillStyle="#0a0a0a";
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    // luz
+    // efeito de luz
     ctx.save();
     const g=ctx.createRadialGradient(player.x,player.y,0,player.x,player.y,LIGHT);
     g.addColorStop(0,"rgba(255,255,200,.9)");
@@ -414,39 +476,56 @@ function draw(){
     ctx.restore();
 
     // player
-    ctx.fillStyle=player.effect?player.effect:player.color;
+    ctx.fillStyle=player.effect?player.effect:"#fff";
     ctx.beginPath();
     ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
     ctx.fill();
-    if(player.atk>0){ctx.strokeStyle="yellow";ctx.beginPath();ctx.arc(player.x,player.y,player.attackRange,0,Math.PI*2);ctx.stroke();}
+
+    // ataque range
+    if(player.atk>0){
+        ctx.strokeStyle="yellow";
+        ctx.beginPath();
+        ctx.arc(player.x,player.y,player.attackRange,0,Math.PI*2);
+        ctx.stroke();
+    }
 
     // inimigos
     enemies.forEach(e=>{
         if(Math.hypot(player.x-e.x,player.y-e.y)<LIGHT){
-            ctx.fillStyle=e.type==="runner"?"#ff4444":e.type==="tank"?"#880000":e.type==="ghost"?"#fff":"red";
-            if(e.freeze>0) ctx.fillStyle="cyan";
-            ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,Math.PI*2);ctx.fill();
+            if(e.type==="runner")ctx.fillStyle="#ff4444";
+            else if(e.type==="tank")ctx.fillStyle="#880000";
+            else if(e.type==="ghost")ctx.fillStyle="#ffffff";
+            else ctx.fillStyle="red";
+
+            ctx.beginPath();
+            ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
+            ctx.fill();
         }
     });
 
     // HUD
     hudLife.textContent=Math.floor(player.life);
     hudScore.textContent=score;
-    hudCoins.textContent=Math.floor(coins);
+    hudCoins.textContent=coins;
     hudKills.textContent=kills;
     hudBuff.textContent=
         speedTimer>0?"Velocidade "+Math.ceil(speedTimer/60)+"s":
         freezeTimer>0?"Congelamento "+Math.ceil(freezeTimer/60)+"s":
         "Nenhum";
-    hudPower.textContent=Math.floor(power);
-    hudRegen.textContent=(powerRegenRate/60).toFixed(2);
-    hudSkills.textContent=skills.map(s=>s.name).join(", ");
-    hudCoinMult.textContent=coinMultiplier+"x";
+
+    hudSkill.textContent=player.effect?player.effect:"Nenhuma";
+
+    powerFill.style.width=(power/powerMax*100)+"%";
 }
 
 // ================= LOOP =================
-function loop(){update();draw();requestAnimationFrame(loop);}
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
 loop();
 </script>
+
 </body>
 </html>
