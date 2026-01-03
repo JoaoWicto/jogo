@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Terror Survival</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    background:#111;
+    overflow:hidden;
+    font-family:'Courier New', monospace;
+    color:#fff;
+}
+
+canvas{display:block}
+
+/* BOTÕES */
+button{
+    background:#222;
+    border:2px solid #ff4444;
+    color:#fff;
+    padding:10px 20px;
+    cursor:pointer;
+    font-size:16px;
+    transition:0.2s;
+    border-radius:6px;
+}
+button:hover{
+    background:#ff4444;
+    color:#000;
+}
+
+/* HUD */
+#hud{
+    position:fixed;
+    top:10px;
+    left:10px;
+    background:rgba(20,20,20,0.8);
+    border:2px solid #ff4444;
+    padding:15px;
+    font-size:16px;
+    line-height:1.5;
+    color:#fff;
+    z-index:5;
+    border-radius:8px;
+    box-shadow:0 0 10px red;
+}
+
+/* OVERLAY */
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.95);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:15px;
+    color:#ff4444;
+    z-index:20;
+    font-size:20px;
+}
+.hidden{display:none}
+
+/* BOTÕES MOBILE */
+#mobile{
+    position:fixed;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:10px;
+    z-index:10;
+}
+@media(min-width:800px){#mobile{display:none}}
+button.mobile-btn{
+    width:60px;
+    height:60px;
+    font-size:20px;
+    border-radius:50%;
+    background:#222;
+    border:2px solid #ff4444;
+    color:#fff;
+}
+button.mobile-btn:hover{background:#ff4444;color:#000;}
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- MENU -->
+<div id="menu" class="overlay">
+    <h1>TERROR SURVIVAL</h1>
+    <button onclick="startGame()">▶ JOGAR</button>
+</div>
+
+<!-- UPGRADE -->
+<div id="upgrade" class="overlay hidden">
+    <h2>ESCOLHA UM BÔNUS</h2>
+    <button onclick="upgradeLife()">❤️ +5% VIDA</button>
+    <button onclick="upgradeAttack()">⚔️ +5% ATAQUE</button>
+</div>
+
+<!-- SHOP -->
+<div id="shop" class="overlay hidden">
+    <h2>🛒 LOJA</h2>
+    <div id="shopItems"></div>
+    <button onclick="toggleShop()">❌ FECHAR</button>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameover" class="overlay hidden">
+    <h1>GAME OVER</h1>
+    <p id="finalScore"></p>
+    <button onclick="restartGame()">🔄 REINICIAR</button>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+VIDA: <span id="hudLife"></span><br>
+PONTOS: <span id="hudScore"></span><br>
+MOEDAS: <span id="hudCoins"></span><br>
+MORTES: <span id="hudKills"></span><br>
+BUFF: <span id="hudBuff">Nenhum</span><br>
+PODER: <span id="hudPower">0</span><br>
+RECARGA: <span id="hudRegen">1.0</span>s<br>
+MULTIPLICADOR MOEDAS: <span id="hudCoinMult">1x</span><br>
+ABILIDADES: <span id="hudSkills">Nenhuma</span>
+</div>
+
+<!-- BOTÕES MOBILE -->
+<div id="mobile">
+    <button class="mobile-btn" onclick="useSkill(1)">1</button>
+    <button class="mobile-btn" onclick="useSkill(2)">2</button>
+    <button class="mobile-btn" onclick="useSkill(3)">3</button>
+</div>
+
+<script>
+// ================= CANVAS =================
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+addEventListener("resize",resize);resize();
+
+// ================= ELEMENTOS =================
+const menu=document.getElementById("menu");
+const upgrade=document.getElementById("upgrade");
+const shop=document.getElementById("shop");
+const shopItemsDiv=document.getElementById("shopItems");
+const gameoverScreen=document.getElementById("gameover");
+
+const hudLife=document.getElementById("hudLife");
+const hudScore=document.getElementById("hudScore");
+const hudCoins=document.getElementById("hudCoins");
+const hudKills=document.getElementById("hudKills");
+const hudBuff=document.getElementById("hudBuff");
+const hudPower=document.getElementById("hudPower");
+const hudRegen=document.getElementById("hudRegen");
+const hudSkills=document.getElementById("hudSkills");
+const hudCoinMult=document.getElementById("hudCoinMult");
+const finalScore=document.getElementById("finalScore");
+
+// ================= STATE =================
+let state="menu"; // menu | playing | upgrade | gameover
+let shopOpen=false;
+
+// ================= PLAYER =================
+const player={
+    x:0,y:0,
+    size:18,
+    speed:3,baseSpeed:3,
+    life:100,maxLife:100,
+    attackRange:50,
+    inv:0,atk:0,cd:0,
+    color:"#fff",
+    effect:null,
+    effectTimer:0
+};
+
+// ================= GAME VARS =================
+let score=0, coins=0, kills=0;
+let nextUpgrade=5;
+let enemyCount=1;
+
+let speedTimer=0;
+let freezeTimer=0;
+
+// ================= HABILIDADES =================
+let power=0;
+let powerMax=100;
+let powerRegenRate=60; // frames
+let powerRegenTimer=0;
+let powerSpeedLevel=0;
+let coinMultiplier=1;
+
+// habilidades com efeito visual
+const skills=[
+    {name:"Corte Forte", cost:20, effect:"yellow", func:()=>{enemies.forEach(e=>{if(Math.hypot(player.x-e.x,player.y-e.y)<player.attackRange) e.life-=30;})}},
+    {name:"Congelar", cost:40, effect:"cyan", func:()=>{enemies.forEach(e=>e.freeze=120)}},
+    {name:"Explosão", cost:70, effect:"magenta", func:()=>{enemies.forEach(e=>e.life-=60)}},
+];
+
+// ================= ENEMIES =================
+const enemies=[];
+const LIGHT=180;
+
+// ================= INPUT =================
+const keys={};
+addEventListener("keydown",e=>{
+    keys[e.key.toLowerCase()]=true;
+    if(e.code==="Space")attack();
+    if(e.key==="ç"||e.key==="Ç")toggleShop();
+    if(["1","2","3"].includes(e.key)) useSkill(+e.key);
+});
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+
+// ================= FLOW =================
+function startGame(){resetGame();menu.classList.add("hidden");state="playing";}
+function restartGame(){gameoverScreen.classList.add("hidden");startGame();}
+function resetGame(){
+    score=coins=kills=0;
+    nextUpgrade=5;
+    enemyCount=1;
+
+    player.x=canvas.width/2;
+    player.y=canvas.height/2;
+    player.life=player.maxLife=100;
+    player.attackRange=50;
+    player.speed=player.baseSpeed;
+    player.color="#fff";
+    player.effect=null;
+    player.effectTimer=0;
+
+    power=0;
+    powerRegenRate=60;
+    powerSpeedLevel=0;
+    coinMultiplier=1;
+
+    spawnEnemies();
+}
+
+// ================= SHOP =================
+const shopItems=[
+    {name:"Velocidade (20s)", price:10, action:()=>{if(coins>=10){coins-=10;speedTimer=1200;player.speed=5;}}},
+    {name:"Congelar inimigos (5s)", price:15, action:()=>{if(coins>=15){coins-=15;freezeTimer=300;}}},
+    {name:"Recarga Poder +5", price:20, action:upgradePowerSpeed},
+    {name:"Multiplicador de moedas", price:30, action:upgradeCoinMult},
+    {name:"Mudar Cor Player", price:10, action:changeColor},
+    {name:"Poção Vida +20", price:15, action:()=>{if(coins>=15){coins-=15;player.life+=20;if(player.life>player.maxLife)player.life=player.maxLife;}}},
+    {name:"Poção Ataque +10%", price:25, action:()=>{if(coins>=25){coins-=25;player.attackRange*=1.1;}}}
+];
+
+function renderShop(){
+    shopItemsDiv.innerHTML="";
+    shopItems.forEach((item,i)=>{
+        const btn=document.createElement("button");
+        btn.textContent=`${item.name} - ${item.price} moedas`;
+        btn.onclick=item.action;
+        shopItemsDiv.appendChild(btn);
+    });
+}
+
+function toggleShop(){
+    if(state!=="playing")return;
+    shopOpen=!shopOpen;
+    shop.classList.toggle("hidden");
+    renderShop();
+}
+
+function upgradePowerSpeed(){
+    const baseCost=20+powerSpeedLevel*10;
+    if(coins>=baseCost && powerRegenRate>12){
+        coins-=baseCost;
+        powerRegenRate-=6;
+        if(powerRegenRate<12) powerRegenRate=12;
+        powerSpeedLevel++;
+        alert(`Recarga de poder melhorada! Novo tempo: ${(powerRegenRate/60).toFixed(2)}s`);
+    } else alert("Não possui moedas ou já está no mínimo!");
+}
+
+function upgradeCoinMult(){
+    const cost=30*Math.ceil(coinMultiplier);
+    if(coins>=cost){
+        coins-=cost;
+        coinMultiplier+=0.5;
+        alert(`Multiplicador de moedas aumentado! Agora: ${coinMultiplier}x`);
+    } else alert("Moedas insuficientes!");
+}
+
+function changeColor(){
+    if(coins>=10){
+        coins-=10;
+        player.color=`hsl(${Math.random()*360},80%,60%)`;
+    } else alert("Moedas insuficientes!");
+}
+
+// ================= UPGRADES =================
+function checkUpgrade(){if(kills>=nextUpgrade){state="upgrade";upgrade.classList.remove("hidden");}}
+function upgradeLife(){player.maxLife*=1.05;player.life=player.maxLife;closeUpgrade();}
+function upgradeAttack(){player.attackRange*=1.05;closeUpgrade();}
+function closeUpgrade(){upgrade.classList.add("hidden");nextUpgrade*=2;state="playing";}
+
+// ================= ENEMIES =================
+function spawnEnemies(){
+    enemies.length=0;
+    for(let i=0;i<enemyCount;i++){
+        const r=Math.random();
+        let type="normal";
+        if(r<0.3) type="runner";
+        else if(r<0.5) type="tank";
+        else if(r<0.65) type="ghost";
+        let e={type,x:Math.random()*canvas.width,y:Math.random()*canvas.height};
+        if(type==="runner"){Object.assign(e,{size:12,speed:2.4,life:20,reward:2});}
+        else if(type==="tank"){Object.assign(e,{size:24,speed:0.8,life:50,reward:5});}
+        else if(type==="ghost"){Object.assign(e,{size:18,speed:1.5,life:40,reward:3,phase:0});}
+        else{Object.assign(e,{size:16,speed:1.2,life:40,reward:2});}
+        enemies.push(e);
+    }
+}
+
+// ================= HABILIDADES =================
+function useSkill(n){
+    if(state!=="playing") return;
+    const skill=skills[n-1];
+    if(power>=skill.cost){
+        power-=skill.cost;
+        player.effect=skill.effect;
+        player.effectTimer=30;
+        skill.func();
+    }
+}
+
+// ================= ATTACK =================
+function attack(){
+    if(player.cd>0||state!=="playing"||shopOpen)return;
+    player.atk=10;player.cd=30;
+
+    enemies.forEach((e,i)=>{
+        if(Math.hypot(player.x-e.x,player.y-e.y)<player.attackRange){
+            e.life-=20;
+            if(e.life<=0){
+                enemies.splice(i,1);
+                kills++;
+                coins+=e.reward*coinMultiplier;
+                score+=e.reward*100;
+                checkUpgrade();
+            }
+        }
+    });
+
+    if(enemies.length===0)spawnEnemies();
+}
+
+// ================= UPDATE =================
+function update(){
+    if(state!=="playing"||shopOpen)return;
+
+    // movimento
+    if(speedTimer>0) speedTimer--; else player.speed=player.baseSpeed;
+    if(freezeTimer>0) freezeTimer--;
+
+    if(keys.w)player.y-=player.speed;
+    if(keys.s)player.y+=player.speed;
+    if(keys.a)player.x-=player.speed;
+    if(keys.d)player.x+=player.speed;
+
+    player.x=Math.max(player.size,Math.min(canvas.width-player.size,player.x));
+    player.y=Math.max(player.size,Math.min(canvas.height-player.size,player.y));
+
+    // inimigos
+    enemies.forEach(e=>{
+        if(freezeTimer>0) return;
+        if(e.freeze>0){e.freeze--;return;}
+        let dx=player.x-e.x,dy=player.y-e.y,d=Math.hypot(dx,dy);
+        if(e.type==="ghost"){e.phase+=0.05;e.x+=Math.cos(e.phase)*2;e.y+=Math.sin(e.phase)*2;}
+        if(d>0){e.x+=dx/d*e.speed;e.y+=dy/d*e.speed;}
+        if(d<player.size+e.size && player.inv<=0){player.life-=20;player.inv=60;
+            if(player.life<=0){state="gameover";gameoverScreen.classList.remove("hidden");finalScore.textContent="PONTOS: "+score;}
+        }
+    });
+
+    if(player.inv>0)player.inv--;
+    if(player.atk>0)player.atk--;
+    if(player.cd>0)player.cd--;
+
+    // barra de poder
+    powerRegenTimer++;
+    if(powerRegenTimer>=powerRegenRate){power++; if(power>powerMax) power=powerMax; powerRegenTimer=0;}
+    if(player.effectTimer>0){player.effectTimer--; if(player.effectTimer===0) player.effect=null;}
+
+    score++;
+    const extra=Math.floor(score/5000)*2;
+    if(enemyCount!==1+extra){enemyCount=1+extra;spawnEnemies();}
+}
+
+// ================= DRAW =================
+function draw(){
+    ctx.fillStyle="#111";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    // luz
+    ctx.save();
+    const g=ctx.createRadialGradient(player.x,player.y,0,player.x,player.y,LIGHT);
+    g.addColorStop(0,"rgba(255,255,200,.9)");
+    g.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.globalCompositeOperation="lighter";
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,LIGHT,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // player
+    ctx.fillStyle=player.effect?player.effect:player.color;
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
+    ctx.fill();
+    if(player.atk>0){ctx.strokeStyle="yellow";ctx.beginPath();ctx.arc(player.x,player.y,player.attackRange,0,Math.PI*2);ctx.stroke();}
+
+    // inimigos
+    enemies.forEach(e=>{
+        if(Math.hypot(player.x-e.x,player.y-e.y)<LIGHT){
+            ctx.fillStyle=e.type==="runner"?"#ff4444":e.type==="tank"?"#880000":e.type==="ghost"?"#fff":"red";
+            if(e.freeze>0) ctx.fillStyle="cyan";
+            ctx.beginPath();ctx.arc(e.x,e.y,e.size,0,Math.PI*2);ctx.fill();
+        }
+    });
+
+    // HUD
+    hudLife.textContent=Math.floor(player.life);
+    hudScore.textContent=score;
+    hudCoins.textContent=Math.floor(coins);
+    hudKills.textContent=kills;
+    hudBuff.textContent=
+        speedTimer>0?"Velocidade "+Math.ceil(speedTimer/60)+"s":
+        freezeTimer>0?"Congelamento "+Math.ceil(freezeTimer/60)+"s":
+        "Nenhum";
+    hudPower.textContent=Math.floor(power);
+    hudRegen.textContent=(powerRegenRate/60).toFixed(2);
+    hudSkills.textContent=skills.map(s=>s.name).join(", ");
+    hudCoinMult.textContent=coinMultiplier+"x";
+}
+
+// ================= LOOP =================
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>
