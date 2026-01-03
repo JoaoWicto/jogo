@@ -1,297 +1,1053 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Terror Survival</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<style>
-html,body{
-    margin:0;
-    padding:0;
-    background:#111;
-    overflow:hidden;
-    font-family:monospace;
-    touch-action: none; /* evita scroll por toque */
-}
-canvas{display:block; width:100%; height:100%;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Survival: Eternal Requiem - ULTRA V5.0</title>
+    <style>
+        /* CSS RESET & THEME */
+        :root {
+            --red: #ff3e3e; 
+            --gold: #ffd700; 
+            --cyan: #00f2ff; 
+            --xp: #3b82f6; 
+            --purple: #a333ff;
+            --dark: #050508; 
+            --panel: rgba(10, 10, 15, 0.95); 
+            --border: rgba(255, 255, 255, 0.1);
+            --font: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
 
-button{
-    background:#111;
-    border:1px solid red;
-    color:#fff;
-    padding:8px 16px;
-    cursor:pointer;
-    touch-action: manipulation;
-}
-button:hover{background:red}
+        * { 
+            box-sizing: border-box; 
+            outline: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
 
-#hud{
-    position:fixed;
-    top:10px;
-    left:10px;
-    background:rgba(0,0,0,.7);
-    border:1px solid red;
-    padding:10px;
-    color:#fff;
-    z-index:5;
-    font-size:14px;
-    max-width:90%;
-}
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            background: #000; 
+            overflow: hidden; 
+            font-family: var(--font); 
+            color: white; 
+            user-select: none;
+            touch-action: none;
+        }
 
-.overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.9);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-    color:red;
-    z-index:20;
-    padding:10px;
-}
-.hidden{display:none}
+        canvas { 
+            display: block; 
+            image-rendering: auto; 
+            cursor: crosshair;
+        }
 
-#mobileControls{
-    position:fixed;
-    bottom:10px;
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    z-index:15;
-    justify-content:center;
-}
-.mobile-btn{
-    width:50px;
-    height:50px;
-    font-size:18px;
-    border:1px solid red;
-    background:#111;
-    color:#fff;
-    border-radius:8px;
-    user-select:none;
-}
-.mobile-btn:hover{background:red}
+        /* ATMOSPHERE FX */
+        #screen-fx {
+            position: fixed; 
+            inset: 0; 
+            pointer-events: none; 
+            z-index: 999;
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%);
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+        }
 
-#powerBar{
-    width:150px;
-    height:10px;
-    background:#222;
-    border:1px solid red;
-    margin-top:5px;
-}
-#powerFill{
-    width:0%;
-    height:100%;
-    background:orange;
-}
-</style>
+        .crt-lines {
+            position: fixed; 
+            inset: 0; 
+            pointer-events: none; 
+            z-index: 1000;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px; 
+            opacity: 0.15;
+        }
+
+        /* HUD STYLING */
+        #hud {
+            position: fixed; 
+            inset: 0; 
+            pointer-events: none; 
+            padding: 25px;
+            z-index: 100; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+        }
+
+        .hud-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+        }
+
+        .player-card {
+            width: 320px; 
+            background: var(--panel); 
+            border-left: 4px solid var(--cyan);
+            padding: 15px; 
+            border-radius: 4px; 
+            backdrop-filter: blur(15px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+        }
+
+        .bioma-indicator {
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 3px;
+            color: var(--gold); 
+            margin-bottom: 10px; 
+            font-weight: 900;
+        }
+
+        .bar-wrap { margin-bottom: 12px; }
+        .bar-label {
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            margin-bottom: 4px; 
+            display: flex; 
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .bar-bg { 
+            height: 8px; 
+            background: rgba(0,0,0,0.6); 
+            border-radius: 10px; 
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .bar-fill { 
+            height: 100%; 
+            width: 100%; 
+            transition: width 0.3s ease-out;
+            position: relative;
+        }
+
+        .stats-grid { display: flex; gap: 10px; }
+        .stat-item {
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            padding: 8px 15px; 
+            min-width: 90px; 
+            text-align: center; 
+            border-radius: 4px;
+        }
+        .stat-item label { 
+            display: block; 
+            font-size: 8px; 
+            opacity: 0.5; 
+            margin-bottom: 2px; 
+            letter-spacing: 1px;
+        }
+        .stat-item span { 
+            font-size: 18px; 
+            font-weight: 900; 
+            color: var(--gold); 
+        }
+
+        /* OVERLAYS & MENUS */
+        .overlay {
+            position: fixed; 
+            inset: 0; 
+            background: rgba(3, 3, 5, 0.96);
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            z-index: 2000; 
+            transition: opacity 0.4s;
+            padding: 20px;
+        }
+
+        .btn-action {
+            background: transparent; 
+            border: 1px solid rgba(255,255,255,0.3); 
+            color: #fff;
+            padding: 15px 40px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer;
+            text-transform: uppercase; 
+            letter-spacing: 4px; 
+            transition: all 0.3s;
+            margin: 8px;
+            border-radius: 2px;
+        }
+        .btn-action:hover { 
+            background: #fff; 
+            color: #000; 
+            box-shadow: 0 0 25px rgba(255,255,255,0.4); 
+            transform: translateY(-2px);
+        }
+
+        .shop-layout {
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 15px;
+            width: 100%;
+            max-width: 1200px;
+            max-height: 60vh; 
+            overflow-y: auto; 
+            padding: 20px;
+        }
+        
+        .card-item {
+            background: rgba(255,255,255,0.02); 
+            border: 1px solid var(--border);
+            padding: 25px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: 0.3s;
+            text-align: center;
+        }
+        .card-item:hover { 
+            background: rgba(255,255,255,0.07); 
+            border-color: var(--cyan);
+            transform: scale(1.03);
+        }
+        .card-item h3 { margin: 0 0 10px 0; color: var(--gold); letter-spacing: 2px; }
+        .card-item p { font-size: 13px; opacity: 0.7; margin-bottom: 15px; }
+
+        /* SKILL DOCK */
+        #skill-dock {
+            position: fixed; 
+            bottom: 30px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            display: flex; 
+            gap: 12px; 
+            pointer-events: auto;
+        }
+        .skill-slot {
+            width: 60px; 
+            height: 60px; 
+            background: var(--panel); 
+            border: 1px solid var(--border);
+            border-radius: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 11px; 
+            font-weight: bold; 
+            color: var(--cyan);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .skill-slot:active { transform: scale(0.9); }
+        .skill-slot.cooldown { opacity: 0.3; pointer-events: none; }
+        .skill-key { font-size: 9px; color: rgba(255,255,255,0.3); margin-bottom: 2px; }
+
+        /* MISC */
+        .hidden { display: none !important; }
+        #toast {
+            position: fixed; 
+            top: 20%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            font-size: 32px; 
+            font-weight: 900; 
+            color: #fff; 
+            pointer-events: none; 
+            z-index: 5000;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8); 
+            transition: 0.5s; 
+            opacity: 0;
+            text-align: center;
+            letter-spacing: 5px;
+        }
+
+        #joy-container {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            display: none; /* Ativado via JS se for mobile */
+            z-index: 1000;
+        }
+        #joy-stick {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            top: 35px;
+            left: 35px;
+            opacity: 0.5;
+        }
+    </style>
 </head>
 <body>
 
-<canvas id="game"></canvas>
+    <div id="screen-fx"></div>
+    <div class="crt-lines"></div>
+    <div id="toast">SYSTEM INITIALIZED</div>
 
-<!-- MENU -->
-<div id="menu" class="overlay">
-    <h1>TERROR SURVIVAL</h1>
-    <button onclick="startGame()">▶ JOGAR</button>
-</div>
+    <canvas id="game-canvas"></canvas>
 
-<!-- UPGRADE -->
-<div id="upgrade" class="overlay hidden">
-    <h2>ESCOLHA UM BÔNUS</h2>
-    <button onclick="upgradeLife()">❤️ +5% VIDA</button>
-    <button onclick="upgradeAttack()">⚔️ +5% ATAQUE</button>
-</div>
+    <!-- MOBILE JOYSTICK -->
+    <div id="joy-container"><div id="joy-stick"></div></div>
 
-<!-- SHOP -->
-<div id="shop" class="overlay hidden">
-    <h2>🛒 LOJA</h2>
-    <button onclick="buySpeed()">⚡ Velocidade (20s) - 10 moedas</button>
-    <button onclick="freezeEnemies()">❄️ Congelar inimigos (5s) - 15 moedas</button>
-    <button onclick="upgradePowerRegen()">⚡ Recarga Poder</button>
-    <button onclick="changeColor()">🎨 Cor do Player</button>
-    <button onclick="toggleShop()">❌ FECHAR</button>
-</div>
+    <div id="hud">
+        <div class="hud-top">
+            <div class="player-card">
+                <div class="bioma-indicator" id="bioma-name">Reino das Sombras</div>
+                
+                <div class="bar-wrap">
+                    <div class="bar-label">XP NÍVEL <span id="lvl-txt">1</span> <span id="xp-val">0/100</span></div>
+                    <div class="bar-bg"><div id="xp-bar" class="bar-fill" style="background: var(--xp); width: 0%"></div></div>
+                </div>
 
-<!-- GAME OVER -->
-<div id="gameover" class="overlay hidden">
-    <h1>GAME OVER</h1>
-    <p id="finalScore"></p>
-    <button onclick="restartGame()">🔄 REINICIAR</button>
-</div>
+                <div class="bar-wrap">
+                    <div class="bar-label" style="color: var(--red);">VITALIDADE <span id="hp-val">100/100</span></div>
+                    <div class="bar-bg"><div id="hp-bar" class="bar-fill" style="background: var(--red);"></div></div>
+                </div>
 
-<!-- HUD -->
-<div id="hud">
-VIDA: <span id="hudLife"></span><br>
-PONTOS: <span id="hudScore"></span><br>
-MOEDAS: <span id="hudCoins"></span><br>
-MORTES: <span id="hudKills"></span><br>
-BUFF: <span id="hudBuff">Nenhum</span><br>
-HABILIDADE: <span id="hudSkill">Nenhuma</span><br>
-<div id="powerBar"><div id="powerFill"></div></div><br>
-<button onclick="toggleShop()">🛒 LOJA</button>
-</div>
+                <div class="bar-wrap">
+                    <div class="bar-label" style="color: var(--cyan);">ESSÊNCIA <span id="mp-val">100/100</span></div>
+                    <div class="bar-bg"><div id="mp-bar" class="bar-fill" style="background: var(--cyan);"></div></div>
+                </div>
+            </div>
 
-<!-- MOBILE CONTROLS -->
-<div id="mobileControls">
-    <button class="mobile-btn" id="btnUp">▲</button>
-    <button class="mobile-btn" id="btnLeft">◀</button>
-    <button class="mobile-btn" id="btnDown">▼</button>
-    <button class="mobile-btn" id="btnRight">▶</button>
-    <button class="mobile-btn" id="skill1">1</button>
-    <button class="mobile-btn" id="skill2">2</button>
-    <button class="mobile-btn" id="skill3">3</button>
-    <button class="mobile-btn" id="skill4">4</button>
-    <button class="mobile-btn" id="skill5">5</button>
-    <button class="mobile-btn" id="skill6">6</button>
-    <button class="mobile-btn" id="skill7">7</button>
-    <button class="mobile-btn" id="skill8">8</button>
-    <button class="mobile-btn" id="skill9">9</button>
-    <button class="mobile-btn" id="skill10">0</button>
-</div>
+            <div class="stats-grid">
+                <div class="stat-item"><label>ABATES</label><span id="kills-txt">0</span></div>
+                <div class="stat-item"><label>ALMAS</label><span id="coins-txt">0</span></div>
+            </div>
+        </div>
+
+        <div id="boss-hud" class="hidden" style="width: 70%; align-self: center; margin-bottom: 20px;">
+            <div class="bar-label" id="boss-name" style="justify-content: center; font-weight: bold; letter-spacing: 5px; color: white; margin-bottom: 8px;">ENTIDADE ANCIÃ</div>
+            <div class="bar-bg" style="height: 12px; border: 1px solid rgba(255,255,255,0.2);"><div id="boss-bar" class="bar-fill" style="background: linear-gradient(90deg, #500, #f00);"></div></div>
+        </div>
+
+        <div id="skill-dock">
+            <div class="skill-slot" onclick="Game.cast(1)"><span class="skill-key">[1]</span>NOVA</div>
+            <div class="skill-slot" onclick="Game.cast(2)"><span class="skill-key">[2]</span>BLITZ</div>
+            <div class="skill-slot" onclick="Game.cast(3)"><span class="skill-key">[3]</span>CURA</div>
+            <div class="skill-slot" onclick="Game.cast(4)"><span class="skill-key">[4]</span>VÓRTEX</div>
+            <div class="skill-slot" onclick="Game.cast(5)"><span class="skill-key">[5]</span>CAOS</div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU -->
+    <div id="menu-start" class="overlay">
+        <h1 style="font-size: clamp(40px, 8vw, 90px); color: var(--red); letter-spacing: 15px; margin: 0; text-shadow: 0 0 30px rgba(255,0,0,0.5);">SHADOW</h1>
+        <p style="letter-spacing: 6px; margin-bottom: 50px; opacity: 0.5; font-size: 14px;">ETERNAL REQUIEM • V5.0 ONLINE</p>
+        
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            <div class="card-item" style="width: 280px;" onclick="Game.start('blade')">
+                <h3>LÂMINA DE SANGUE</h3>
+                <p>Combate próximo e veloz. Ganha vida ao abater inimigos.</p>
+                <span style="color: var(--red)">SELECIONAR</span>
+            </div>
+            <div class="card-item" style="width: 280px;" onclick="Game.start('staff')">
+                <h3>CAJADO DO VAZIO</h3>
+                <p>Ataques em área massivos. Regeneração de essência aumentada.</p>
+                <span style="color: var(--cyan)">SELECIONAR</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEVEL UP MENU -->
+    <div id="menu-upgrade" class="overlay hidden">
+        <h2 style="font-size: 24px; letter-spacing: 8px; color: var(--gold); margin-bottom: 30px;">ASCENSÃO DISPONÍVEL</h2>
+        <div class="shop-layout" id="upgrade-root"></div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="menu-death" class="overlay hidden">
+        <h2 style="font-size: 50px; color: var(--red); letter-spacing: 10px;">O RITUAL FALHOU</h2>
+        <p id="death-stats" style="opacity: 0.7; margin-bottom: 30px;">Abates: 0 | Nível: 1</p>
+        <button class="btn-action" onclick="location.reload()">TENTAR NOVAMENTE</button>
+    </div>
 
 <script>
-// ================= CANVAS =================
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-function resize(){canvas.width=window.innerWidth; canvas.height=window.innerHeight;}
-window.addEventListener("resize", resize);
-resize();
+/** * SHADOW SURVIVAL: ETERNAL REQUIEM 
+ * CORE ENGINE V5.0 - OPTIMIZED & EXPANDED
+ */
 
-// ================= ELEMENTOS =================
-const menu=document.getElementById("menu");
-const upgrade=document.getElementById("upgrade");
-const shop=document.getElementById("shop");
-const gameoverScreen=document.getElementById("gameover");
-const hudLife=document.getElementById("hudLife");
-const hudScore=document.getElementById("hudScore");
-const hudCoins=document.getElementById("hudCoins");
-const hudKills=document.getElementById("hudKills");
-const hudBuff=document.getElementById("hudBuff");
-const hudSkill=document.getElementById("hudSkill");
-const finalScore=document.getElementById("finalScore");
-const powerFill=document.getElementById("powerFill");
+// --- UTILS ---
+const MATH = {
+    rand: (min, max) => Math.random() * (max - min) + min,
+    dist: (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1),
+    lerp: (a, b, t) => a + (b - a) * t,
+    clamp: (v, min, max) => Math.min(Math.max(v, min), max)
+};
 
-// ================= STATE =================
-let state="menu"; 
-let shopOpen=false;
+const CONFIG = {
+    FPS: 60,
+    WORLD_SIZE: 5000,
+    MAX_PARTICLES: 150,
+    MAX_ENEMIES: 40,
+    SPAWN_DIST: 800,
+    BIOMES: [
+        { name: "Cemitério de Éter", bg: "#050508", accent: "#ff3e3e", fog: 400 },
+        { name: "Prisão de Sangue", bg: "#0d0303", accent: "#ffcc00", fog: 350 },
+        { name: "Vazio Abissal", bg: "#03060d", accent: "#00f2ff", fog: 500 },
+        { name: "Cidadela de Platina", bg: "#0a0a0a", accent: "#ffffff", fog: 450 }
+    ]
+};
 
-// ================= PLAYER =================
-const player={x:0,y:0,size:18,speed:3,baseSpeed:3,life:100,maxLife:100,attackRange:50,inv:0,atk:0,cd:0,effect:null,effectTimer:0,color:"#fff"};
+// --- GAME STATE ---
+const Game = (() => {
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+    
+    let width, height;
+    let frame = 0;
+    let lastTime = 0;
+    
+    const world = {
+        entities: [],
+        particles: [],
+        drops: [],
+        decals: [],
+        enemies: [],
+        camera: { x: 0, y: 0, targetX: 0, targetY: 0, shake: 0 }
+    };
 
-// ================= GAME VARS =================
-let score=0, coins=0, kills=0, nextUpgrade=5, enemyCount=1, power=0, powerMax=100, powerRegenRate=1000, speedTimer=0, freezeTimer=0;
+    const state = {
+        active: false,
+        paused: false,
+        level: 1,
+        xp: 0,
+        nextXp: 100,
+        kills: 0,
+        souls: 0,
+        biomeIdx: 0,
+        difficulty: 1.0,
+        bossActive: false
+    };
 
-// ================= ENEMIES =================
-const enemies=[];
-const LIGHT=180;
+    const player = {
+        x: 0, y: 0,
+        vx: 0, vy: 0,
+        radius: 18,
+        speed: 4.5,
+        hp: 100, maxHp: 100,
+        mp: 100, maxMp: 100,
+        dmg: 35,
+        range: 140,
+        angle: 0,
+        weapon: 'blade',
+        atkCooldown: 0,
+        invul: 0,
+        stats: {
+            area: 1.0,
+            magnet: 180,
+            regenMp: 0.12,
+            lifesteal: 0,
+            crit: 0.1,
+            luck: 1.0
+        }
+    };
 
-// ================= INPUT =================
-const keys={};
-window.addEventListener("keydown", e=>{
-    keys[e.key.toLowerCase()]=true;
-    if("1234567890".includes(e.key)) useLegendarySkill(parseInt(e.key)-1);
-    if(e.code==="Space") attack();
-    if(e.key==="ç"||e.key==="Ç") toggleShop();
-});
-window.addEventListener("keyup", e=>keys[e.key.toLowerCase()]=false);
+    const inputs = { w: false, a: false, s: false, d: false, space: false };
+    const joy = { active: false, x: 0, y: 0 };
 
-// ================= MOBILE CONTROLS =================
-const mobileKeys={up:false,down:false,left:false,right:false};
-["Up","Down","Left","Right"].forEach((dir,i)=>{
-    const btn=document.getElementById("btn"+dir);
-    btn.addEventListener("touchstart", ()=> mobileKeys[dir.toLowerCase()]=true);
-    btn.addEventListener("touchend", ()=> mobileKeys[dir.toLowerCase()]=false);
-});
-for(let i=0;i<10;i++){
-    const btn=document.getElementById(`skill${i+1}`);
-    btn.addEventListener("touchstart", ()=> useLegendarySkill(i));
-}
-
-// ================= HABILIDADES =================
-const legendarySkills=[/*mesmo array do seu código anterior*/];
-function useLegendarySkill(index){
-    if(state!=="playing")return;
-    const skill=legendarySkills[index];
-    if(power>=skill.cost){
-        power-=skill.cost;
-        player.effect=skill.effect;
-        player.effectTimer=60;
-        skill.func();
-        hudSkill.textContent=skill.name;
-        hudBuff.textContent=skill.name;
+    // --- CLASSES ---
+    class Entity {
+        constructor(x, y, radius, color) {
+            this.x = x; this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.id = Math.random();
+            this.dead = false;
+        }
     }
-}
 
-// ================= FLOW =================
-function startGame(){ resetGame(); menu.classList.add("hidden"); state="playing";}
-function restartGame(){ gameoverScreen.classList.add("hidden"); startGame();}
-function resetGame(){ 
-    score=coins=kills=0; nextUpgrade=5; enemyCount=1;
-    player.x=canvas.width/2; player.y=canvas.height/2; 
-    player.life=player.maxLife=100; player.attackRange=50; player.speed=player.baseSpeed;
-    spawnEnemies();
-}
+    class Enemy extends Entity {
+        constructor(x, y, type = "grunt") {
+            super(x, y, 20, "#ff3e3e");
+            this.type = type;
+            this.hp = 60 * state.difficulty;
+            this.maxHp = this.hp;
+            this.speed = MATH.rand(2, 3.2);
+            this.dmg = 12 * state.difficulty;
+            this.value = 10;
+            this.frozen = 0;
 
-// ================= SHOP =================
-function toggleShop(){ if(state!=="playing")return; shopOpen=!shopOpen; shop.classList.toggle("hidden");}
-function buySpeed(){ if(coins>=10 && speedTimer<=0){ coins-=10; speedTimer=1200; player.speed=5; } }
-function freezeEnemies(){ if(coins>=15 && freezeTimer<=0){ coins-=15; freezeTimer=300; } }
-let powerRegenCost=20; function upgradePowerRegen(){ if(coins>=powerRegenCost && powerRegenRate>400){ coins-=powerRegenCost; powerRegenRate-=100; powerRegenCost+=5; } }
-function changeColor(){ if(coins>=10){ coins-=10; player.color=`hsl(${Math.random()*360},80%,60%)`; }}
+            if(type === "tank") {
+                this.radius = 35;
+                this.hp *= 5;
+                this.maxHp = this.hp;
+                this.speed *= 0.6;
+                this.color = "#666";
+                this.value = 50;
+            } else if(type === "boss") {
+                this.radius = 80;
+                this.hp *= 40;
+                this.maxHp = this.hp;
+                this.speed = 2.5;
+                this.color = "#fff";
+                this.value = 1000;
+                this.isBoss = true;
+            }
+        }
 
-// ================= UPGRADES =================
-function checkUpgrade(){ if(kills>=nextUpgrade){ state="upgrade"; upgrade.classList.remove("hidden"); } }
-function upgradeLife(){ player.maxLife*=1.05; player.life=player.maxLife; closeUpgrade();}
-function upgradeAttack(){ player.attackRange*=1.05; closeUpgrade();}
-function closeUpgrade(){ upgrade.classList.add("hidden"); nextUpgrade*=2; state="playing";}
+        update() {
+            if(this.frozen > 0) { this.frozen--; return; }
 
-// ================= ENEMIES =================
-function spawnEnemies(){ enemies.length=0; for(let i=0;i<enemyCount;i++){ /*mesmo que seu código anterior*/ } }
+            const dist = MATH.dist(this.x, this.y, player.x, player.y);
+            const angle = Math.atan2(player.y - this.y, player.x - this.x);
 
-// ================= ATTACK =================
-function attack(){ /*mesmo que seu código anterior*/ }
+            // Perseguir jogador
+            this.x += Math.cos(angle) * this.speed;
+            this.y += Math.sin(angle) * this.speed;
 
-// ================= UPDATE =================
-function update(){
-    if(state!=="playing"||shopOpen)return;
-    if(speedTimer>0) speedTimer--; else player.speed=player.baseSpeed;
-    if(freezeTimer>0) freezeTimer--;
+            // Colisão com jogador
+            if(dist < this.radius + player.radius && player.invul <= 0) {
+                damagePlayer(this.dmg);
+                this.dead = true; // Grunts morrem ao tocar (opcional)
+                if(this.type === "grunt") killEntity(this);
+            }
+        }
 
-    // movimento teclado e mobile
-    if(keys.w||mobileKeys.up) player.y-=player.speed;
-    if(keys.s||mobileKeys.down) player.y+=player.speed;
-    if(keys.a||mobileKeys.left) player.x-=player.speed;
-    if(keys.d||mobileKeys.right) player.x+=player.speed;
+        draw() {
+            const relX = this.x - world.camera.x;
+            const relY = this.y - world.camera.y;
 
-    player.x=Math.max(player.size,Math.min(canvas.width-player.size,player.x));
-    player.y=Math.max(player.size,Math.min(canvas.height-player.size,player.y));
+            // Culling simples
+            if(relX < -100 || relX > width + 100 || relY < -100 || relY > height + 100) return;
 
-    // inimigos
-    enemies.forEach(e=>{ /*mesmo código anterior de movimentação e ataque*/ });
+            // Glow do Inimigo
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+            ctx.fillStyle = this.frozen > 0 ? "#00f2ff" : this.color;
+            ctx.beginPath();
+            ctx.arc(relX, relY, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
 
-    if(player.inv>0)player.inv--;
-    if(player.atk>0)player.atk--;
-    if(player.cd>0)player.cd--;
+            // Barra de vida HP
+            if(!this.isBoss) {
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(relX - 20, relY - this.radius - 10, 40, 4);
+                ctx.fillStyle = "red";
+                ctx.fillRect(relX - 20, relY - this.radius - 10, (this.hp / this.maxHp) * 40, 4);
+            }
+        }
+    }
 
-    score++;
-    const extra=Math.floor(score/5000)*2;
-    if(enemyCount!==1+extra){ enemyCount=1+extra; spawnEnemies(); }
+    class Particle {
+        constructor(x, y, color, vx, vy, size = 4) {
+            this.x = x; this.y = y;
+            this.vx = vx; this.vy = vy;
+            this.color = color;
+            this.life = 1.0;
+            this.decay = MATH.rand(0.015, 0.03);
+            this.size = size;
+        }
+        update() {
+            this.x += this.vx; this.y += this.vy;
+            this.life -= this.decay;
+        }
+        draw() {
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x - world.camera.x, this.y - world.camera.y, this.size, this.size);
+            ctx.globalAlpha = 1;
+        }
+    }
 
-    if(power<powerMax && performance.now()%powerRegenRate<16) power++;
-    if(player.effectTimer>0) player.effectTimer--; else player.effect=null;
-}
+    class Drop {
+        constructor(x, y, type) {
+            this.x = x; this.y = y;
+            this.type = type; // 'xp', 'soul', 'powerup'
+            this.radius = 6;
+            this.targetX = x + MATH.rand(-50, 50);
+            this.targetY = y + MATH.rand(-50, 50);
+        }
+        update() {
+            const d = MATH.dist(this.x, this.y, player.x, player.y);
+            if(d < player.stats.magnet) {
+                const a = Math.atan2(player.y - this.y, player.x - this.x);
+                this.x += Math.cos(a) * 15;
+                this.y += Math.sin(a) * 15;
+            } else {
+                this.x = MATH.lerp(this.x, this.targetX, 0.1);
+                this.y = MATH.lerp(this.y, this.targetY, 0.1);
+            }
+            return d < 20;
+        }
+        draw() {
+            const rx = this.x - world.camera.x;
+            const ry = this.y - world.camera.y;
+            ctx.fillStyle = this.type === 'xp' ? "#3b82f6" : "#ffd700";
+            ctx.beginPath();
+            ctx.arc(rx, ry, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
 
-// ================= DRAW =================
-function draw(){ /*mesmo código anterior com ctx e HUD*/ }
+    // --- LOGIC ---
+    function init() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
 
-// ================= LOOP =================
-function loop(){ update(); draw(); requestAnimationFrame(loop);}
-loop();
+        // Controles Teclado
+        window.addEventListener('keydown', e => {
+            const k = e.key.toLowerCase();
+            if(k === 'w' || k === 'arrowup') inputs.w = true;
+            if(k === 's' || k === 'arrowdown') inputs.s = true;
+            if(k === 'a' || k === 'arrowleft') inputs.a = true;
+            if(k === 'd' || k === 'arrowright') inputs.d = true;
+            if(k === ' ') inputs.space = true;
+            if(!isNaN(k) && k !== ' ') castSkill(parseInt(k));
+        });
+
+        window.addEventListener('keyup', e => {
+            const k = e.key.toLowerCase();
+            if(k === 'w' || k === 'arrowup') inputs.w = false;
+            if(k === 's' || k === 'arrowdown') inputs.s = false;
+            if(k === 'a' || k === 'arrowleft') inputs.a = false;
+            if(k === 'd' || k === 'arrowright') inputs.d = false;
+            if(k === ' ') inputs.space = false;
+        });
+
+        // Toque Mobile
+        if ('ontouchstart' in window) {
+            document.getElementById("joy-container").style.display = "block";
+            setupJoystick();
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    function setupJoystick() {
+        const cont = document.getElementById("joy-container");
+        const stick = document.getElementById("joy-stick");
+        cont.addEventListener('touchstart', e => { joy.active = true; });
+        cont.addEventListener('touchmove', e => {
+            const rect = cont.getBoundingClientRect();
+            const touch = e.touches[0];
+            const centerX = rect.left + rect.width/2;
+            const centerY = rect.top + rect.height/2;
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            const max = rect.width/2;
+            const dist = Math.hypot(dx, dy);
+            if(dist > max) { dx *= max/dist; dy *= max/dist; }
+            stick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joy.x = dx / max; joy.y = dy / max;
+        });
+        cont.addEventListener('touchend', () => {
+            joy.active = false;
+            stick.style.transform = `translate(0, 0)`;
+            joy.x = 0; joy.y = 0;
+        });
+        // Tap para atacar/skill
+        window.addEventListener('touchstart', (e) => {
+            if(e.target.id === "game-canvas") performAttack();
+        });
+    }
+
+    function start(weapon) {
+        player.weapon = weapon;
+        if(weapon === 'staff') {
+            player.dmg = 50;
+            player.range = 250;
+            player.maxMp = 150;
+            player.mp = 150;
+            player.stats.regenMp = 0.25;
+        }
+        player.x = 0; player.y = 0;
+        state.active = true;
+        document.getElementById("menu-start").classList.add("hidden");
+        showToast("O RITUAL COMEÇOU");
+    }
+
+    function spawnParticles(x, y, color, count = 10, speed = 4) {
+        for(let i=0; i<count; i++) {
+            if(world.particles.length < CONFIG.MAX_PARTICLES) {
+                const angle = Math.random() * Math.PI * 2;
+                const s = Math.random() * speed;
+                world.particles.push(new Particle(x, y, color, Math.cos(angle)*s, Math.sin(angle)*s));
+            }
+        }
+    }
+
+    function performAttack() {
+        if(player.atkCooldown > 0 || state.paused) return;
+        
+        player.atkCooldown = player.weapon === 'staff' ? 45 : 18;
+        world.camera.shake = 8;
+
+        const range = player.range * player.stats.area;
+        let hit = false;
+
+        world.enemies.forEach(en => {
+            if(MATH.dist(player.x, player.y, en.x, en.y) < range) {
+                damageEnemy(en, player.dmg);
+                hit = true;
+                spawnParticles(en.x, en.y, "#fff", 3, 2);
+            }
+        });
+
+        if(hit) {
+            // Feedback visual de golpe
+        }
+    }
+
+    function damageEnemy(en, amount) {
+        en.hp -= amount;
+        if(en.hp <= 0 && !en.dead) {
+            killEntity(en);
+        }
+    }
+
+    function killEntity(en) {
+        en.dead = true;
+        state.kills++;
+        state.souls += en.value * state.level;
+        
+        // Spawn Drops
+        for(let i=0; i < (en.isBoss ? 20 : 1); i++) {
+            world.drops.push(new Drop(en.x, en.y, Math.random() > 0.3 ? 'xp' : 'soul'));
+        }
+
+        // Decal de sangue
+        world.decals.push({
+            x: en.x, y: en.y, 
+            r: en.radius * 1.5, 
+            color: "rgba(40,0,0,0.3)", 
+            life: 500
+        });
+
+        spawnParticles(en.x, en.y, en.color, 15, 6);
+
+        if(en.isBoss) {
+            state.bossActive = false;
+            document.getElementById("boss-hud").classList.add("hidden");
+            showToast("ENTIDADE BANIDA");
+            state.difficulty += 0.5;
+        }
+    }
+
+    function damagePlayer(amount) {
+        if(player.invul > 0) return;
+        player.hp -= amount;
+        player.invul = 40;
+        world.camera.shake = 20;
+        spawnParticles(player.x, player.y, "#f00", 20, 8);
+        
+        if(player.hp <= 0) {
+            gameOver();
+        }
+    }
+
+    function gameOver() {
+        state.active = false;
+        document.getElementById("menu-death").classList.remove("hidden");
+        document.getElementById("death-stats").innerText = `Abates: ${state.kills} | Nível: ${state.level} | Almas: ${state.souls}`;
+    }
+
+    function castSkill(slot) {
+        const costs = [0, 30, 40, 50, 60, 100];
+        const cost = costs[slot] || 0;
+
+        if(player.mp < cost) {
+            showToast("ESSÊNCIA INSUFICIENTE");
+            return;
+        }
+
+        player.mp -= cost;
+        world.camera.shake = 30;
+
+        switch(slot) {
+            case 1: // Nova
+                world.enemies.forEach(en => {
+                    if(MATH.dist(player.x, player.y, en.x, en.y) < 400) {
+                        damageEnemy(en, 200);
+                        spawnParticles(en.x, en.y, "cyan", 5);
+                    }
+                });
+                showToast("NOVA ARCANA");
+                break;
+            case 2: // Blitz (Velocidade)
+                player.invul = 100;
+                player.speed *= 2;
+                setTimeout(() => player.speed /= 2, 2000);
+                break;
+            case 3: // Cura
+                player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.4);
+                spawnParticles(player.x, player.y, "#0f0", 30);
+                break;
+            case 4: // Vórtex
+                world.enemies.forEach(en => {
+                    en.frozen = 180;
+                    const a = Math.atan2(player.y - en.y, player.x - en.x);
+                    en.x += Math.cos(a) * 200; en.y += Math.sin(a) * 200;
+                });
+                break;
+            case 5: // Apocalipse
+                player.mp = 0;
+                world.enemies.forEach(en => damageEnemy(en, 1000));
+                showToast("JULGAMENTO FINAL");
+                break;
+        }
+    }
+
+    function levelUp() {
+        state.level++;
+        state.xp = 0;
+        state.nextXp *= 1.4;
+        state.difficulty += 0.15;
+        showToast("NÍVEL " + state.level);
+        
+        if(state.level % 5 === 0) {
+            spawnBoss();
+        }
+        
+        openUpgradeMenu();
+    }
+
+    function spawnBoss() {
+        state.bossActive = true;
+        const boss = new Enemy(player.x + 500, player.y + 500, "boss");
+        world.enemies.push(boss);
+        document.getElementById("boss-hud").classList.remove("hidden");
+        document.getElementById("boss-name").innerText = "ARAUTO DO VAZIO";
+    }
+
+    function openUpgradeMenu() {
+        state.paused = true;
+        const menu = document.getElementById("menu-upgrade");
+        const root = document.getElementById("upgrade-root");
+        menu.classList.remove("hidden");
+        root.innerHTML = "";
+
+        const options = [
+            { t: "Coração de Éter", d: "Aumenta vida máxima em 50", f: () => { player.maxHp += 50; player.hp += 50; } },
+            { t: "Fúria Sombria", d: "Dano de ataque +25%", f: () => player.dmg *= 1.25 },
+            { t: "Passo Fantasma", d: "Velocidade de movimento +10%", f: () => player.speed += 0.5 },
+            { t: "Mente Clara", d: "Regeneração de Essência +40%", f: () => player.stats.regenMp *= 1.4 },
+            { t: "Alcance Infinito", d: "Área de ataque +20%", f: () => player.stats.area += 0.2 },
+            { t: "Magnatismo", d: "Alcance de coleta +50%", f: () => player.stats.magnet += 100 }
+        ];
+
+        options.sort(() => Math.random() - 0.5).slice(0, 3).forEach(opt => {
+            const div = document.createElement("div");
+            div.className = "card-item";
+            div.innerHTML = `<h3>${opt.t}</h3><p>${opt.d}</p>`;
+            div.onclick = () => {
+                opt.f();
+                state.paused = false;
+                menu.classList.add("hidden");
+            };
+            root.appendChild(div);
+        });
+    }
+
+    function update(dt) {
+        if(!state.active || state.paused) return;
+
+        // Movimento
+        let mx = 0, my = 0;
+        if(inputs.w) my--; if(inputs.s) my++;
+        if(inputs.a) mx--; if(inputs.d) mx++;
+        if(joy.active) { mx = joy.x; my = joy.y; }
+
+        if(mx !== 0 || my !== 0) {
+            const mag = Math.hypot(mx, my);
+            player.vx = (mx / mag) * player.speed;
+            player.vy = (my / mag) * player.speed;
+            player.x += player.vx;
+            player.y += player.vy;
+            player.angle = Math.atan2(my, mx);
+            
+            if(frame % 10 === 0) spawnParticles(player.x, player.y, "rgba(255,255,255,0.1)", 1, 0.5);
+        }
+
+        // Camera Follow (Smooth)
+        world.camera.targetX = player.x - width/2;
+        world.camera.targetY = player.y - height/2;
+        world.camera.x = MATH.lerp(world.camera.x, world.camera.targetX, 0.1);
+        world.camera.y = MATH.lerp(world.camera.y, world.camera.targetY, 0.1);
+
+        // Cooldowns
+        if(player.atkCooldown > 0) player.atkCooldown--;
+        if(player.invul > 0) player.invul--;
+        player.mp = Math.min(player.maxMp, player.mp + player.stats.regenMp);
+
+        // Spawn Inimigos
+        if(frame % Math.max(10, 60 - state.level*2) === 0 && world.enemies.length < CONFIG.MAX_ENEMIES) {
+            const ang = Math.random() * Math.PI * 2;
+            const ex = player.x + Math.cos(ang) * CONFIG.SPAWN_DIST;
+            const ey = player.y + Math.sin(ang) * CONFIG.SPAWN_DIST;
+            world.enemies.push(new Enemy(ex, ey, Math.random() > 0.85 ? "tank" : "grunt"));
+        }
+
+        // Update Entities
+        world.enemies = world.enemies.filter(en => {
+            en.update();
+            return !en.dead;
+        });
+
+        world.particles = world.particles.filter(p => {
+            p.update();
+            return p.life > 0;
+        });
+
+        world.drops = world.drops.filter(d => {
+            if(d.update()) {
+                if(d.type === 'xp') {
+                    state.xp += 20;
+                    if(state.xp >= state.nextXp) levelUp();
+                } else {
+                    state.souls += 5;
+                }
+                return false;
+            }
+            return true;
+        });
+
+        // Limpeza de decals antigos
+        if(world.decals.length > 50) world.decals.shift();
+        world.decals.forEach(d => d.life--);
+        world.decals = world.decals.filter(d => d.life > 0);
+
+        if(inputs.space) performAttack();
+
+        syncHUD();
+        frame++;
+    }
+
+    function draw() {
+        const biome = CONFIG.BIOMES[state.biomeIdx];
+        
+        // Background
+        ctx.fillStyle = biome.bg;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        // Shake Camera
+        if(world.camera.shake > 0) {
+            ctx.translate(MATH.rand(-world.camera.shake, world.camera.shake), MATH.rand(-world.camera.shake, world.camera.shake));
+            world.camera.shake *= 0.9;
+        }
+
+        // Draw World Grid (Optional for orientation)
+        ctx.strokeStyle = "rgba(255,255,255,0.03)";
+        ctx.lineWidth = 1;
+        const gridSize = 100;
+        const startX = Math.floor(world.camera.x / gridSize) * gridSize;
+        const startY = Math.floor(world.camera.y / gridSize) * gridSize;
+        for(let x = startX; x < startX + width + gridSize; x += gridSize) {
+            ctx.beginPath(); ctx.moveTo(x - world.camera.x, 0); ctx.lineTo(x - world.camera.x, height); ctx.stroke();
+        }
+        for(let y = startY; y < startY + height + gridSize; y += gridSize) {
+            ctx.beginPath(); ctx.moveTo(0, y - world.camera.y); ctx.lineTo(width, y - world.camera.y); ctx.stroke();
+        }
+
+        // Decals
+        world.decals.forEach(d => {
+            ctx.fillStyle = d.color;
+            ctx.beginPath(); ctx.arc(d.x - world.camera.x, d.y - world.camera.y, d.r, 0, Math.PI*2); ctx.fill();
+        });
+
+        // Drops
+        world.drops.forEach(d => d.draw());
+
+        // Inimigos
+        world.enemies.forEach(en => en.draw());
+
+        // Jogador
+        if(player.invul % 4 < 2) {
+            const px = player.x - world.camera.x;
+            const py = player.y - world.camera.y;
+
+            // Aura
+            const grad = ctx.createRadialGradient(px, py, 0, px, py, player.radius * 2);
+            grad.addColorStop(0, player.weapon === 'staff' ? "rgba(0, 242, 255, 0.3)" : "rgba(255, 62, 62, 0.3)");
+            grad.addColorStop(1, "transparent");
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(px, py, player.radius * 2, 0, Math.PI*2); ctx.fill();
+
+            // Corpo
+            ctx.fillStyle = "#fff";
+            ctx.beginPath(); ctx.arc(px, py, player.radius, 0, Math.PI*2); ctx.fill();
+
+            // Olhos (direção)
+            ctx.fillStyle = "#000";
+            const eyeX = Math.cos(player.angle) * 6;
+            const eyeY = Math.sin(player.angle) * 6;
+            ctx.beginPath(); ctx.arc(px + eyeX - 4, py + eyeY, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(px + eyeX + 4, py + eyeY, 2, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Ataque (VFX)
+        if(player.atkCooldown > (player.weapon === 'staff' ? 30 : 12)) {
+            ctx.strokeStyle = player.weapon === 'staff' ? "cyan" : "white";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(player.x - world.camera.x, player.y - world.camera.y, player.range * player.stats.area, player.angle - 0.5, player.angle + 0.5);
+            ctx.stroke();
+        }
+
+        // Partículas
+        world.particles.forEach(p => p.draw());
+
+        // Fog of War / Vignette
+        const vGrad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width*0.7);
+        vGrad.addColorStop(0, "transparent");
+        vGrad.addColorStop(1, "rgba(0,0,0,0.8)");
+        ctx.fillStyle = vGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.restore();
+    }
+
+    function loop(time) {
+        const dt = time - lastTime;
+        lastTime = time;
+
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    function syncHUD() {
+        document.getElementById("hp-bar").style.width = (player.hp / player.maxHp * 100) + "%";
+        document.getElementById("mp-bar").style.width = (player.mp / player.maxMp * 100) + "%";
+        document.getElementById("xp-bar").style.width = (state.xp / state.nextXp * 100) + "%";
+        
+        document.getElementById("hp-val").innerText = Math.max(0, Math.round(player.hp)) + "/" + player.maxHp;
+        document.getElementById("mp-val").innerText = Math.round(player.mp) + "/" + player.maxMp;
+        document.getElementById("xp-val").innerText = Math.round(state.xp) + "/" + Math.round(state.nextXp);
+        
+        document.getElementById("lvl-txt").innerText = state.level;
+        document.getElementById("kills-txt").innerText = state.kills;
+        document.getElementById("coins-txt").innerText = state.souls;
+
+        if(state.bossActive) {
+            const boss = world.enemies.find(e => e.isBoss);
+            if(boss) document.getElementById("boss-bar").style.width = (boss.hp / boss.maxHp * 100) + "%";
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.innerText = msg;
+        t.style.opacity = 1;
+        setTimeout(() => t.style.opacity = 0, 2000);
+    }
+
+    return { init, start, cast: castSkill };
+})();
+
+// Iniciar Motor
+window.onload = Game.init;
+
 </script>
 </body>
 </html>
