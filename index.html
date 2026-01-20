@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecos da Noite - Menu Principal</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nosifer&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Definição das Cores Principais */
+        :root {
+            --color-bg: #050505;      /* Preto profundo, quase absoluto */
+            --color-base: #FFFFFF;    /* Base branca para texto e estrutura */
+            --color-accent: #DC143C;  /* Vermelho Carmesim para destaque/sangue */
+            --color-shadow: #2a0000;  /* Sombra vermelha escura */
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Roboto Mono', monospace; /* Fonte monoespaçada para os botões (estilo técnico/suspense) */
+            background-color: var(--color-bg);
+            color: var(--color-base);
+            overflow: hidden; /* Evita barras de rolagem */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Efeito de Fundo Atmosférico (Ondas de Eco) */
+        .background-echoes {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            background: radial-gradient(circle, transparent 20%, var(--color-bg) 70%);
+            overflow: hidden;
+        }
+
+        .echo-wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--color-accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: pulseEcho 6s infinite linear;
+        }
+        /* Criando múltiplas ondas com atrasos */
+        .echo-wave:nth-child(1) { animation-delay: 0s; }
+        .echo-wave:nth-child(2) { animation-delay: 2s; }
+        .echo-wave:nth-child(3) { animation-delay: 4s; }
+
+        @keyframes pulseEcho {
+            0% {
+                width: 100px;
+                height: 100px;
+                opacity: 0.6;
+                border-width: 3px;
+            }
+            100% {
+                width: 1200px;
+                height: 1200px;
+                opacity: 0;
+                border-width: 1px;
+            }
+        }
+
+        /* Container Principal da Interface */
+        .main-interface {
+            text-align: center;
+            z-index: 10;
+            padding: 40px;
+            /* Efeito de vinheta sutil */
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.8) 100%);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Título do Jogo */
+        .game-title {
+            font-family: 'Nosifer', cursive; /* Fonte estilo gotejante/terror */
+            font-size: 5rem;
+            color: var(--color-base);
+            text-transform: uppercase;
+            margin-bottom: 60px;
+            letter-spacing: 4px;
+            /* Sombra vermelha para dar profundidade e um brilho sinistro */
+            text-shadow: 0 0 15px var(--color-accent), 0 0 30px var(--color-shadow);
+            animation: textFlicker 8s infinite alternate;
+        }
+
+        /* Animação sutil de falha de luz no texto */
+        @keyframes textFlicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow: 0 0 15px var(--color-accent), 0 0 30px var(--color-shadow);
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                text-shadow: none;
+                opacity: 0.8;
+            }
+        }
+
+        /* Container dos Botões */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px; /* Espaço entre os botões */
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto; /* Centraliza horizontalmente */
+        }
+
+        /* Estilo dos Botões */
+        .menu-btn {
+            background-color: transparent;
+            border: 2px solid var(--color-base); /* Base branca */
+            color: var(--color-base);           /* Texto branco */
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-family: 'Roboto Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efeito de Hover (Passar o mouse) - Onde o Vermelho entra */
+        .menu-btn:hover {
+            border-color: var(--color-accent); /* Borda vermelha */
+            color: var(--color-accent);        /* Texto vermelho */
+            box-shadow: 0 0 20px rgba(220, 20, 60, 0.4); /* Brilho vermelho externo */
+            background-color: rgba(220, 20, 60, 0.1); /* Fundo vermelho translúcido */
+            transform: scale(1.05); /* Aumenta ligeiramente */
+        }
+
+        /* Efeito de Clique */
+        .menu-btn:active {
+            transform: scale(0.98);
+            background-color: rgba(220, 20, 60, 0.3);
+        }
+
+        /* Ajustes para telas menores */
+        @media (max-width: 768px) {
+            .game-title {
+                font-size: 3rem;
+            }
+            .menu-btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background-echoes">
+        <div class="echo-wave"></div>
+        <div class="echo-wave"></div>
+        <div class="echo-wave"></div>
+    </div>
+
+    <main class="main-interface">
+        <h1 class="game-title">Ecos da Noite</h1>
+        
+        <nav class="menu-container">
+            <button class="menu-btn" onclick="window.location.href='jogo.html'">Iniciar</button>
+            
+            
+            <button class="menu-btn" onclick="console.log('Tela de Créditos')">Créditos</button>
+        </nav>
+    </main>
+
+
+    <script>
+    function iniciarJogo() {
+        // Adiciona um efeito de fade na tela (opcional)
+        document.body.style.transition = "opacity 0.8s";
+        document.body.style.opacity = "0";
+        
+        // Aguarda a animação e muda de página
+        setTimeout(() => {
+            window.location.href = 'jogo.html';
+        }, 800);
+    }
+</script>
+
+</body>
+</html>

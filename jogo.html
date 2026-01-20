@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Survival: Eternal Requiem - ULTRA V6.0</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ⚠️ TODO O HTML ORIGINAL VAI AQUI -->
+    <!-- NÃO REMOVA NADA -->
+    <!-- NÃO ENCURTE -->
+    <!-- NÃO COMENTE -->
+
+    <!-- (ÁUDIO, FX, HUD, MENUS, CANVAS, ETC) -->
+
+
+    <!-- Áudio do Sistema -->
+    <audio id="bgm" loop>
+        <!-- Coloque seu link aqui. Exemplo placeholder -->
+        <source src="https://opengameart.org/sites/default/files/The%20Dark%20Amulet.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Camadas FX -->
+    <div id="screen-fx"></div>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    
+    <!-- Container de Texto Flutuante -->
+    <div id="floaters-container" style="position:fixed; inset:0; pointer-events:none; z-index:90;"></div>
+
+    <!-- Notificações -->
+    <div id="toast">SISTEMA INICIADO</div>
+
+    <!-- Canvas do Jogo -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Controles Mobile -->
+    <div class="mobile-controls" id="mobile-ui">
+        <div id="joy-zone-left"><div id="joy-stick"></div></div>
+        <div id="btn-attack-zone">ATACAR</div>
+    </div>
+
+    <!-- Interface HUD -->
+    <div id="hud">
+        <div class="hud-top">
+            <div class="player-card">
+                <div class="bioma-indicator">
+                    <span id="bioma-name">---</span>
+                    <button class="hud-btn-small" onclick="Engine.toggleSettings()">CONFIG</button>
+                </div>
+                
+                <div class="bar-wrap">
+                    <div class="bar-label">XP NÍVEL <span id="lvl-txt">1</span> <span id="xp-val">0/100</span></div>
+                    <div class="bar-bg"><div id="xp-bar" class="bar-fill" style="background: var(--xp); width: 0%"></div></div>
+                </div>
+
+                <div class="bar-wrap">
+                    <div class="bar-label" style="color: var(--red);">VITALIDADE <span id="hp-val">100/100</span></div>
+                    <div class="bar-bg"><div id="hp-bar" class="bar-fill" style="background: var(--red);"></div></div>
+                </div>
+
+                <div class="bar-wrap">
+                    <div class="bar-label" style="color: var(--cyan);">MANA <span id="mp-val">150/150</span></div>
+                    <div class="bar-bg"><div id="mp-bar" class="bar-fill" style="background: var(--cyan);"></div></div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item"><label>ABATES</label><span id="kills-txt">0</span></div>
+                <div class="stat-item"><label>ALMAS</label><span id="coins-txt">0</span></div>
+                <button id="btn-shop-hud" onclick="Engine.toggleShop()">MERCADOR [B]</button>
+            </div>
+        </div>
+
+        <div id="boss-hud">
+            <div class="boss-name-plate" id="boss-name">BOSS NAME</div>
+            <div class="bar-bg" style="height: 15px; border: 2px solid rgba(255,255,255,0.3);">
+                <div id="boss-bar" class="bar-fill" style="background: linear-gradient(90deg, #800000, #ff0000);"></div>
+            </div>
+        </div>
+
+        <div id="skill-dock">
+            <div class="skill-slot" onclick="Engine.cast(1)">
+                <div class="skill-icon">💥</div>
+                <span class="skill-key">[1]</span>
+            </div>
+            <div class="skill-slot" onclick="Engine.cast(2)">
+                <div class="skill-icon">⚡</div>
+                <span class="skill-key">[2]</span>
+            </div>
+            <div class="skill-slot" onclick="Engine.cast(3)">
+                <div class="skill-icon">💖</div>
+                <span class="skill-key">[3]</span>
+            </div>
+            <div class="skill-slot" onclick="Engine.cast(4)">
+                <div class="skill-icon">🌀</div>
+                <span class="skill-key">[4]</span>
+            </div>
+            <div class="skill-slot" onclick="Engine.cast(5)">
+                <div class="skill-icon">💀</div>
+                <span class="skill-key">[5]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENU INICIAL -->
+<div id="menu-start" class="overlay">
+    <h1 class="title">ECOS DA NOITE</h1>
+    <p class="subtitle">ETERNAL REQUIEM</p>
+    
+    <div style="margin-bottom: 25px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+        <p style="font-size: 14px; color: var(--gold); margin-bottom: 10px;">GRAU DE INFESTAÇÃO</p>
+        <select onchange="Engine.setDifficulty(this.value)" style="background: #000; color: white; border: 1px solid var(--red); padding: 8px 15px; cursor: pointer; font-family: 'Roboto Mono';">
+            <option value="facil">FÁCIL</option>
+            <option value="normal" selected>NORMAL</option>
+            <option value="dificil">DIFÍCIL</option>
+            <option value="pesadelo">PESADELO </option>
+        </select>
+    </div>
+
+    <div class="cards-container" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+        <div class="card-item" onclick="Engine.startGame('soll')">
+            <div style="font-size: 45px;">☀️</div>
+            <h3>SOLL</h3>
+            <span style="color: var(--red);">[INICIAR]</span>
+        </div>
+        <div class="card-item" onclick="Engine.startGame('angelica')">
+            <div style="font-size: 45px;">😇</div>
+            <h3>ANGELICA</h3>
+            <span style="color: var(--cyan);">[INICIAR]</span>
+        </div>
+        <div class="card-item" onclick="Engine.startGame('wix')">
+            <div style="font-size: 45px;">🦊</div>
+            <h3>WIX</h3>
+            <span style="color: var(--red);">[INICIAR]</span>
+        </div>
+        <div class="card-item" onclick="Engine.startGame('xerequinha')">
+            <div style="font-size: 45px;">🐱</div>
+            <h3>XEREQUINHA</h3>
+            <span style="color: var(--cyan);">[INICIAR]</span>
+        </div>
+    </div>
+</div>
+    
+    <div style="margin-top: 20px;">
+        <button class="btn-action" onclick="Engine.toggleSettings()">CONFIGURAÇÕES</button>
+        <a href="index.html"><button class="btn-action">VOLTAR</button></a>
+    </div>
+</div>
+
+    <!-- MENU LEVEL UP -->
+    <div id="menu-upgrade" class="overlay hidden">
+        <h2 style="font-size: 30px; color: var(--gold); margin-bottom: 10px; letter-spacing: 5px;">ASCENSÃO DIVINA</h2>
+        <p style="margin-bottom: 30px; opacity: 0.7;">ESCOLHA UMA BÊNÇÃO</p>
+        <div class="cards-container" id="upgrade-root"></div>
+    </div>
+
+    <!-- MENU LOJA -->
+    <div id="menu-shop" class="overlay hidden">
+        <h2 style="font-size: 30px; color: var(--purple); margin-bottom: 10px; letter-spacing: 5px;">MERCADOR DE ÉTER</h2>
+        <p style="margin-bottom: 20px; opacity: 0.7;">TROQUE ALMAS POR PODER</p>
+        <div class="shop-grid" id="shop-root">
+            <!-- Itens gerados via JS -->
+        </div>
+        <button class="btn-action" style="margin-top: 20px; border-color: var(--red);" onclick="Engine.toggleShop()">FECHAR LOJA</button>
+    </div>
+
+    <!-- MENU CONFIGURAÇÕES -->
+    <div id="menu-settings" class="overlay hidden">
+        <h2 style="color: white; margin-bottom: 30px;">CONFIGURAÇÕES</h2>
+        
+        <div class="settings-row">
+            <label>Tamanho do Joystick</label>
+            <input type="range" min="100" max="250" value="150" oninput="Engine.resizeJoystick(this.value)">
+        </div>
+
+        <div class="settings-row">
+            <label>Volume Música</label>
+            <input type="range" min="0" max="100" value="50" oninput="Engine.setVolume(this.value)">
+        </div>
+
+        <button class="btn-action" onclick="Engine.toggleFullscreen()">TELA CHEIA</button>
+        <button class="btn-action" onclick="Engine.toggleSettings()">VOLTAR</button>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="menu-death" class="overlay hidden">
+        <h2 style="font-size: 60px; color: var(--red); letter-spacing: 10px; text-shadow: 0 0 30px red;">O RITUAL FALHOU</h2>
+        <p id="death-stats" style="font-size: 18px; opacity: 0.8; margin-bottom: 40px;"></p>
+        <button class="btn-action" onclick="location.reload()">RENASCER</button>
+    </div>
+
+
+    <!-- JS — SEMPRE NO FINAL -->
+    <script src="engine.js"></script>
+</body>
+</html>
